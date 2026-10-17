@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TEAM NONE | FreeFire Level Up Bot Dashboard</title>
+    <title>CHINNU TEAM | FreeFire Level Up Bot Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -453,6 +453,24 @@
         .action-btns {
             display: flex;
             gap: 8px;
+            align-items: center;
+        }
+
+        .mode-select {
+            background: rgba(0, 242, 254, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(0, 242, 254, 0.3);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .mode-select option {
+            background: #0d1324;
+            color: #fff;
         }
 
         .icon-btn {
@@ -610,7 +628,7 @@
                     <i class="fa-solid fa-bolt"></i>
                 </div>
                 <div class="brand-text">
-                    <h1>ANGRY_FF<span style="font-weight:400; color:var(--text-muted); font-size:16px;">| LEVEL UP BOT</span></h1>
+                    <h1>CHINNU TEAM<span style="font-weight:400; color:var(--text-muted); font-size:16px;">| LEVEL UP BOT</span></h1>
                     <p>
                         <span class="live-tag"><span class="pulse-dot"></span> System Live</span>
                         <span>• Safe Multi-Match Engine</span>
@@ -806,6 +824,19 @@
             }
         }
 
+        async function changeMode(uid, mode) {
+            try {
+                await fetch('/api/account/mode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid: uid, mode: mode })
+                });
+                fetchStats();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
         async function fetchStats() {
             try {
                 const res = await fetch('/api/stats');
@@ -836,7 +867,7 @@
                                     <div class="acc-profile">
                                         <div class="acc-avatar"><i class="fa-solid fa-user"></i></div>
                                         <div class="acc-info">
-                                            <h4>${escapeHtml(acc.nickname)} <span class="region-badge">${acc.region || 'BD'}</span></h4>
+                                            <h4>${escapeHtml(acc.nickname)} <span class="region-badge">${acc.region || 'IND'}</span></h4>
                                             <span>UID: ${acc.uid}</span>
                                         </div>
                                     </div>
@@ -876,6 +907,10 @@
                                 <div class="acc-actions">
                                     <span>Last match: ${acc.last_match_time || 'Running...'}</span>
                                     <div class="action-btns">
+                                        <select class="mode-select" onchange="changeMode('${acc.uid}', this.value)">
+                                            <option value="BR" ${acc.mode === 'BR' ? 'selected' : ''}>BR Mode</option>
+                                            <option value="LW" ${acc.mode === 'LW' ? 'selected' : ''}>Lone Wolf</option>
+                                        </select>
                                         <button class="icon-btn" title="Refresh Profile/EXP" onclick="refreshAccountInfo('${acc.uid}')"><i class="fa-solid fa-rotate"></i></button>
                                         <button class="icon-btn danger" title="Delete Account" onclick="deleteAccount('${acc.uid}')"><i class="fa-solid fa-trash"></i></button>
                                     </div>
@@ -913,7 +948,7 @@
 
         // Live Poll every 2.5s
         fetchStats();
-        setInterval(fetchStats, 2500);
+        setInterval(fetchStats, 2.5 * 1000);
     </script>
 </body>
 </html>
