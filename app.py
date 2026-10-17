@@ -784,9 +784,25 @@ async def account_loop_token(token):
             if not info_task.done(): info_task.cancel()
         except asyncio.CancelledError: break
         except Exception as e: bot_state.log(f"Token error: {e}. Retry 10s...", "error"); await asyncio.sleep(10)
+async def process_account_uid_pass(uid, password):
+    return await _process_account_uid_pass(uid, password)
 
-def cache_get(uid): return None
-def cache_set(uid, acc): pass
+async def process_account_token(token):
+    return await _process_account_token(token)
+def cache_get(uid):
+    try:
+        cache = _load_token_cache()
+        return cache.get(str(uid))
+    except: return None
+
+def cache_set(uid, account_data):
+    try:
+        cache = _load_token_cache()
+        entry = dict(account_data)
+        entry["cached_at"] = time.time()
+        cache[str(uid)] = entry
+        _save_token_cache(cache)
+    except: pass
 
 async def main():
     try: await start_html_server()
