@@ -714,7 +714,7 @@ async def build_majorlogin_payload(open_id, access_token, platform, client_versi
         }
         raw_proto = build_proto(payload_dict)
         encrypted = encrypt_api_bytes(raw_proto)
-        return encrypted    
+        return encrypted
     except Exception as e:
         log_err(f"MajorLogin payload: {e}")
         return None
@@ -1501,6 +1501,7 @@ async def functional_lone_wolf(addrs, starter_packet, account_region, client_ver
                     nonlocal search_attempts, last_start_time
                     search_attempts += 1
 
+                    # 🆕 PAUSE CHECK
                     if bot_state.is_paused(uid_str):
                         try:
                             bot_state.update_status(uid_str, "PAUSED", 0)
@@ -1548,6 +1549,7 @@ async def functional_lone_wolf(addrs, starter_packet, account_region, client_ver
                         )
                     except Exception: pass
 
+                    # 🆕 PAUSE CHECK IN MAIN LOOP
                     if bot_state.is_paused(uid_str):
                         try:
                             bot_state.update_status(uid_str, "PAUSED", 0)
