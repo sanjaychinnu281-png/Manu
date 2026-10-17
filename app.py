@@ -38,13 +38,194 @@ from dashboard_server import bot_state, start_web_dashboard
 
 # ==================== CONFIG ====================
 WEB_HOST = "0.0.0.0"
-WEB_PORT = 20333
+# Railway apna PORT deta hai, warna local ke liye 8080
+WEB_PORT = int(os.environ.get("PORT", 8080)) 
+
+# ==================== BAKE THE HTML DIRECTLY INTO THE CODE ====================
+HTML_CONTENT = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEAM NONE | FreeFire Level Up Bot Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-base: #060913; --bg-card: rgba(13, 19, 36, 0.75); --bg-card-hover: rgba(19, 27, 50, 0.9);
+            --border-card: rgba(0, 242, 254, 0.12); --border-hover: rgba(0, 242, 254, 0.4);
+            --accent-cyan: #00f2fe; --accent-blue: #4facfe; --accent-purple: #7f00ff;
+            --accent-green: #00ff88; --accent-red: #ff3366; --accent-amber: #ffaa00;
+            --text-main: #f0f4fc; --text-muted: #8e9bb5; --glass-glow: 0 8px 32px 0 rgba(0, 242, 254, 0.08);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+        body { background-color: var(--bg-base); color: var(--text-main); min-height: 100vh; padding: 24px; }
+        .container { max-width: 1440px; margin: 0 auto; }
+        header { display: flex; align-items: center; justify-content: space-between; padding: 20px 28px; background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; margin-bottom: 24px; }
+        .brand { display: flex; align-items: center; gap: 16px; }
+        .logo-box { width: 48px; height: 48px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; }
+        .brand-text h1 { font-size: 22px; font-weight: 800; color: #fff; }
+        .brand-text p { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+        .live-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(0, 255, 136, 0.12); color: var(--accent-green); padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .pulse-dot { width: 7px; height: 7px; background: var(--accent-green); border-radius: 50%; }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; color: #fff; }
+        .btn-primary { background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); color: #040914; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-card); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-bottom: 24px; }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 18px; padding: 20px; display: flex; align-items: center; gap: 18px; }
+        .stat-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        .stat-icon.cyan { background: rgba(0, 242, 254, 0.15); color: var(--accent-cyan); }
+        .stat-icon.green { background: rgba(0, 255, 136, 0.15); color: var(--accent-green); }
+        .stat-icon.purple { background: rgba(127, 0, 255, 0.15); color: #c084fc; }
+        .stat-icon.amber { background: rgba(255, 170, 0, 0.15); color: var(--accent-amber); }
+        .stat-content h3 { font-size: 26px; font-weight: 800; color: #fff; }
+        .stat-content p { font-size: 13px; color: var(--text-muted); }
+        .dashboard-main { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+        @media (max-width: 1024px) { .dashboard-main { grid-template-columns: 1fr; } }
+        .card-box { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: 20px; padding: 24px; }
+        .box-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .box-title { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .accounts-list { display: flex; flex-direction: column; gap: 16px; }
+        .account-card { background: rgba(10, 15, 30, 0.65); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 16px; padding: 20px; }
+        .acc-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .acc-profile { display: flex; align-items: center; gap: 14px; }
+        .acc-avatar { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #1e293b, #334155); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--accent-cyan); border: 1px solid rgba(0, 242, 254, 0.2); }
+        .acc-info h4 { font-size: 16px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .acc-info span { font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+        .acc-status { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+        .status-online { background: rgba(0, 255, 136, 0.12); color: var(--accent-green); border: 1px solid rgba(0, 255, 136, 0.25); }
+        .exp-box { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; background: rgba(0, 0, 0, 0.28); padding: 12px 16px; border-radius: 12px; margin-bottom: 14px; }
+        .exp-item { display: flex; flex-direction: column; gap: 3px; }
+        .exp-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+        .exp-val { font-size: 15px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: #fff; }
+        .log-stream { flex: 1; min-height: 480px; background: #03060f; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 14px; padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .log-item { line-height: 1.4; word-break: break-all; }
+        .log-time { color: #64748b; margin-right: 6px; }
+        .log-info { color: #38bdf8; } .log-success { color: #4ade80; } .log-warning { color: #fbbf24; } .log-error { color: #f87171; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(3, 6, 15, 0.82); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 100; }
+        .modal-overlay.active { display: flex; }
+        .modal-card { background: #0c1224; border: 1px solid var(--border-card); border-radius: 20px; width: 100%; max-width: 480px; padding: 28px; }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+        .form-input { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 10px 14px; color: #fff; font-size: 14px; outline: none; }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="brand">
+                <div class="logo-box"><i class="fa-solid fa-bolt"></i></div>
+                <div class="brand-text">
+                    <h1>ANGRY_FF | LEVEL UP BOT</h1>
+                    <p><span class="live-tag"><span class="pulse-dot"></span> System Live</span><span>• Safe Multi-Match Engine</span></p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="fetchStats()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                <button class="btn btn-primary" onclick="openAddModal()"><i class="fa-solid fa-plus"></i> Add Account</button>
+            </div>
+        </header>
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-icon cyan"><i class="fa-solid fa-users"></i></div><div class="stat-content"><h3 id="stat-total-accounts">0</h3><p>Active Accounts</p></div></div>
+            <div class="stat-card"><div class="stat-icon green"><i class="fa-solid fa-angles-up"></i></div><div class="stat-content"><h3 id="stat-total-exp" style="color:var(--accent-green)">+0 EXP</h3><p>Total EXP Gained</p></div></div>
+            <div class="stat-card"><div class="stat-icon purple"><i class="fa-solid fa-gamepad"></i></div><div class="stat-content"><h3 id="stat-total-matches">0</h3><p>Matches Completed</p></div></div>
+            <div class="stat-card"><div class="stat-icon amber"><i class="fa-solid fa-shield-halved"></i></div><div class="stat-content"><h3 id="stat-uptime">00:00:00</h3><p>Bot Uptime</p></div></div>
+        </div>
+        <div class="dashboard-main">
+            <div class="card-box">
+                <div class="box-header"><div class="box-title"><i class="fa-solid fa-user-astronaut" style="color:var(--accent-cyan)"></i><span>Live Accounts</span></div></div>
+                <div class="accounts-list" id="accounts-container"><div class="empty-state"><p>Loading active accounts...</p></div></div>
+            </div>
+            <div class="card-box logs-box">
+                <div class="box-header"><div class="box-title"><i class="fa-solid fa-terminal" style="color:var(--accent-green)"></i><span>Live Logs</span></div></div>
+                <div class="log-stream" id="log-stream"></div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="add-modal">
+        <div class="modal-card">
+            <div class="modal-header"><h3>Add New Account</h3><button class="btn" onclick="closeAddModal()"><i class="fa-solid fa-xmark"></i></button></div>
+            <form id="add-acc-form" onsubmit="submitAddAccount(event)">
+                <div class="form-group"><label>Account Type</label><select class="form-input" id="acc-type" onchange="toggleFormType()"><option value="guest">Guest (UID + Password)</option><option value="token">Access Token</option></select></div>
+                <div id="guest-fields">
+                    <div class="form-group"><label>Guest UID</label><input type="text" class="form-input" id="acc-uid" placeholder="e.g. 7644913583"></div>
+                    <div class="form-group"><label>Guest Password</label><input type="text" class="form-input" id="acc-password" placeholder="Password"></div>
+                </div>
+                <div id="token-fields" style="display:none;"><div class="form-group"><label>Access Token</label><textarea class="form-input" id="acc-token" rows="3"></textarea></div></div>
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save & Start</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        let startTime = Date.now();
+        function openAddModal() { document.getElementById('add-modal').classList.add('active'); }
+        function closeAddModal() { document.getElementById('add-modal').classList.remove('active'); }
+        function toggleFormType() { const type = document.getElementById('acc-type').value; document.getElementById('guest-fields').style.display = type === 'guest' ? 'block' : 'none'; document.getElementById('token-fields').style.display = type === 'token' ? 'block' : 'none'; }
+        async function submitAddAccount(e) {
+            e.preventDefault();
+            const type = document.getElementById('acc-type').value;
+            let payload = {};
+            if (type === 'guest') { payload = { uid: document.getElementById('acc-uid').value.trim(), password: document.getElementById('acc-password').value.trim() }; } 
+            else { payload = { token: document.getElementById('acc-token').value.trim() }; }
+            try {
+                const res = await fetch('/api/account/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const data = await res.json();
+                if (data.status === 'ok') { closeAddModal(); fetchStats(); } else { alert('Error: ' + data.error); }
+            } catch (err) { alert('Failed: ' + err); }
+        }
+        async function fetchStats() {
+            try {
+                const res = await fetch('/api/stats'); const data = await res.json();
+                document.getElementById('stat-total-accounts').innerText = data.total_accounts;
+                document.getElementById('stat-total-exp').innerText = '+' + data.total_gained_exp.toLocaleString() + ' EXP';
+                document.getElementById('stat-total-matches').innerText = data.total_matches;
+                const container = document.getElementById('accounts-container');
+                if (data.accounts.length === 0) { container.innerHTML = '<div class="empty-state"><p>No active accounts. Click "+ Add Account" to start!</p></div>'; } 
+                else {
+                    container.innerHTML = data.accounts.map(acc => `
+                        <div class="account-card">
+                            <div class="acc-top">
+                                <div class="acc-profile">
+                                    <div class="acc-avatar"><i class="fa-solid fa-user"></i></div>
+                                    <div class="acc-info"><h4>${acc.nickname}</h4><span>UID: ${acc.uid}</span></div>
+                                </div>
+                                <div class="acc-status status-online"><span class="pulse-dot"></span><span>${acc.status}</span></div>
+                            </div>
+                            <div class="exp-box">
+                                <div class="exp-item"><span class="exp-label">Initial</span><span class="exp-val">${acc.initial_exp.toLocaleString()}</span></div>
+                                <div class="exp-item"><span class="exp-label">Current</span><span class="exp-val">${acc.current_exp.toLocaleString()}</span></div>
+                                <div class="exp-item"><span class="exp-label">Gained</span><span class="exp-val" style="color:var(--accent-green)">+${(acc.gained_exp||0).toLocaleString()}</span></div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                const logContainer = document.getElementById('log-stream');
+                logContainer.innerHTML = data.logs.map(log => `<div class="log-item"><span class="log-time">[${log.time}]</span><span class="log-${log.level}">${log.message}</span></div>`).join('');
+                logContainer.scrollTop = logContainer.scrollHeight;
+            } catch (err) {}
+        }
+        setInterval(() => {
+            const sec = Math.floor((Date.now() - startTime) / 1000);
+            document.getElementById('stat-uptime').innerText = `${String(Math.floor(sec / 3600)).padStart(2, '0')}:${String(Math.floor((sec % 3600) / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+        }, 1000);
+        fetchStats(); setInterval(fetchStats, 2500);
+    </script>
+</body>
+</html>
+"""
+
+# Baaki aapka pura original code (jo aapne pehle bheja tha) yahan se shuru hota hai:
 ACCOUNTS_FILE = "accounts.json"
 TOKEN_CACHE_FILE = "token_cache.json"
 DEVICES_FILE = "devices.json"
 TOKEN_CACHE_TTL = 1200
 
-# Human-like
 START_MATCH_INTERVAL_MIN = 4.0
 START_MATCH_INTERVAL_MAX = 8.0
 START_MATCH_INTERVAL = 10.0
@@ -53,12 +234,9 @@ MAX_MATCH_DURATION = 800
 MATCH_IDLE_TIMEOUT = 20.0
 MAX_CONCURRENT_MATCHES = 1
 HUMAN_MODE = True
-
 FORCE_REGION = "IND"
-
 MAX_CONSECUTIVE_PARSE_FAILURES = 5.0
 NON_MATCH_RECONNECT_DELAY = 1.0
-
 FALLBACK_UID = ""
 FALLBACK_PASSWORD = ""
 
@@ -71,7 +249,6 @@ _VERSION_CONFIG_LOCK = asyncio.Lock()
 _REFRESH_SEMAPHORE = asyncio.Semaphore(3)
 
 
-# ==================== HUMAN HELPERS ====================
 async def human_delay(base=1.0, variance=0.5):
     return max(0.1, base + random.uniform(-variance, variance))
 
@@ -79,7 +256,6 @@ async def human_jitter():
     return random.uniform(0.05, 0.35)
 
 
-# ==================== DEVICE ====================
 def get_device_for_account(account_identifier: str) -> dict:
     devices = {}
     if os.path.exists(DEVICES_FILE):
@@ -131,7 +307,6 @@ def get_device_for_account(account_identifier: str) -> dict:
     return new_device
 
 
-# ==================== DNS ====================
 CLOUDFLARE_PRIMARY_DNS = "1.1.1.1"
 CLOUDFLARE_SECONDARY_DNS = "1.0.0.1"
 _DNS_CACHE: Dict[str, Tuple[str, float]] = {}
@@ -230,7 +405,6 @@ def optimize_udp_socket(sock):
         pass
 
 
-# ==================== NETWORK ====================
 client = httpx.AsyncClient(
     verify=False, timeout=10.0,
     limits=httpx.Limits(max_connections=100, max_keepalive_connections=50)
@@ -276,7 +450,6 @@ _FIELD_SIZES = {0: 1, 1: 2, 2: 2, 3: 1, 4: 2}
 _FIELD_NAMES = {0: "sendOption", 1: "cmd", 2: "orderId", 3: "flags", 4: "length"}
 
 
-# ==================== LOG SYSTEM ====================
 class Colors:
     GREEN = '\033[92m'
     FAIL = '\033[91m'
@@ -383,7 +556,6 @@ def log_banner():
     print("")
 
 
-# Backwards compat
 print_colored = cprint
 print_success = log_ok
 print_error = log_err
@@ -403,7 +575,6 @@ def get_proto_field(d, key, default=None):
     return default
 
 
-# ==================== MATCH COUNTERS ====================
 _match_counters: Dict[str, int] = {}
 _match_counter_lock = asyncio.Lock()
 
@@ -434,7 +605,6 @@ async def _get_total_match_count() -> int:
         return sum(_match_counters.values())
 
 
-# ==================== TOKEN CACHE ====================
 _token_cache_memo: Dict[str, Any] = {}
 _token_cache_memo_time: float = 0.0
 _TOKEN_CACHE_MEMO_TTL = 5.0
@@ -531,7 +701,6 @@ def cache_invalidate(uid: str):
         log_warn(f"Invalidated: {uid}")
 
 
-# ==================== CRYPTO ====================
 async def aes_encrypt(payload, key, iv):
     cipher = AES.new(key, AES.MODE_CBC, iv)
     return cipher.encrypt(pad(payload, AES.block_size))
@@ -672,7 +841,6 @@ def encrypt_api_bytes(plain_bytes):
     )
 
 
-# ==================== MAJORLOGIN PAYLOAD (IND) ====================
 async def build_majorlogin_payload(open_id, access_token, platform, client_version, device_info):
     try:
         payload_dict = {
@@ -841,7 +1009,6 @@ async def send_keep_alive(region="IND"):
         return bytes.fromhex("0214")
 
 
-# ==================== MATCH SEARCH PACKETS ====================
 async def start_game_battle_royale(region, client_version, writer, key, iv):
     packet = bytes.fromhex("080112800a0a010110013a110a044944433110aa011a064555524f50453a100a044944433210311a064555524f504540014a0801090a0b1219202758016291090a8001303838463832424630324139363736373032303130313030303030303030303030303136303030313030313530303032323246393745454530463030303030303436373632353134303030303030303030303030303030303030303030303030303030303030303030303030303066663030303030303030636163666131366410241afb02735d5e571400024a775d45414d1a041b1c001f11010449715f4243481a001e1d071c1703004b1a4066785c524570735c51486775421b5c5a4c07504042685a63610816054e19025e75196001477c015165406370195f5547404e4550640103020f1304064863754268676c755f65576e40467e5f0a417a4701026d675d6e73670b1108495a4c6a0b78470b740065645e525a057258425f584a447d4e6759440c11044e7c596d7f4b625f7d04055a47505c4e1d6b5b4107447d7201057d7f0f14084e430457674f7e517d72015172415d027473577c4d615f79535256780911030f4d5e027a797f614165067806505d53777750475e75064257076500460817014e741e7e5078487e7a7c465e7669767153497064605a7376677773550d160148037e18675966787f4c42607a645f577e7b441b460776026b18685d0b110205490060020f70676175654674706671797f41067346677c4e06585e780f15074c57047b40517075415f6364027259674b5b0166407f7340600407770a22047a5d5c52300b3a0a167305067162727516134208312e3133302e3232480350015ae90403626253513635686e556f4e36416456324b796f566c636f477776484f624e56526c4d727073504b4f43654177616848494176795556497273743752737149734a7a786b3247525268377a2f637664626d504f6a73552f79626d38547a4c69586d2f474351696d494b53486833447955726f39515152756c34545350626d6d624b7949565937545671577059455372323646572f59624578507338514f706d317372785455736c30796a434144444d4f34616a654b615753366361496c554b4963797a494e396d52516f715277687939797257476d337a644345337a6a61436f492f5a585233656f65365a42647a64677654636b6b665733356e4d4c6a6a565072564b6433523172756174394e50514150724a5546627859696c4c5a3859707336654d5447666b6649793574666a526c314d4648706b51774c6373374439656378566c41636f374e664f6d2b30654756466c4434744478706771385533595973587645384842502f70666c767a737138316a32524f4d7857437556445442492f684735625462773166456e4249725162762b636144775147696f74554e316d4c4b77734379456f4766706746614251457645672b736a764c4c78704743334c304a5344532f74526169504354553344374e6249306547516651622f5a466f4c36455630775a324d6f583932414c572f5049752f56634663584e70596b356f7966326151416a536971486a2f363276354843644f525551303578754e6171795251625653704654303137655237675255636b4966366c6f447476342b514e4a4670766d74757077707774396a5a5974437a4b56743657726d6e36785837706658456251555434684f3758a201050803108703a201050804108103a20105080510c001a20105081d10cc01a2010408161078a20105080e10af01a201020815")
     proto = thunderFF_pb2.StartMatch()
@@ -888,7 +1055,6 @@ async def start_game_lone_wolf(region, client_version, writer, key, iv):
     log_search(f"LW Search Packet Sent ({packet_length}b) | Region: {reg}")
 
 
-# ==================== TEA + PROTOCOL ====================
 async def has_ssan_zig(n):
     z = (n << 1) & 0xFFFFFFFFFFFFFFFF
     out = bytearray()
@@ -1246,7 +1412,6 @@ async def decode_packet(packet, key, mask=None):
     return candidates[0]
 
 
-# ==================== PLAY GAME ====================
 async def play_game(server_ip_port, thunder, sharma, udp_key, match_code,
                     account_id, player_region, client_version, key, iv, match_index: int):
     match_start_time = time.time()
@@ -1429,7 +1594,6 @@ async def play_game(server_ip_port, thunder, sharma, udp_key, match_code,
         except Exception: pass
 
 
-# ==================== FUNCTIONAL TCP ====================
 async def functional_lone_wolf(addrs, starter_packet, account_region, client_version,
                                 key, iv, account_id="", account_data=None, max_reconnects=10):
     reconnects = 0
@@ -1501,7 +1665,6 @@ async def functional_lone_wolf(addrs, starter_packet, account_region, client_ver
                     nonlocal search_attempts, last_start_time
                     search_attempts += 1
 
-                    # 🆕 PAUSE CHECK
                     if bot_state.is_paused(uid_str):
                         try:
                             bot_state.update_status(uid_str, "PAUSED", 0)
@@ -1549,7 +1712,6 @@ async def functional_lone_wolf(addrs, starter_packet, account_region, client_ver
                         )
                     except Exception: pass
 
-                    # 🆕 PAUSE CHECK IN MAIN LOOP
                     if bot_state.is_paused(uid_str):
                         try:
                             bot_state.update_status(uid_str, "PAUSED", 0)
@@ -1805,7 +1967,6 @@ async def informational(addrs, starter_packet, key, iv, region="IND", max_reconn
                 await asyncio.sleep(1)
 
 
-# ==================== ACCOUNT PROCESSING ====================
 def _register_credentials(account_data: Dict):
     try:
         acc_id = str(account_data['account_id'])
@@ -1905,6 +2066,7 @@ async def _process_account_uid_pass(uid: str, password: str) -> Optional[Dict]:
         if getlogin_result is None:
             log_err(f"GetLoginData failed")
             return None
+            
         res_proto, dict_res = getlogin_result
 
         acc_id = str(majorlogin_response.account_id)
@@ -2005,7 +2167,7 @@ async def _process_account_token(access_token: str) -> Optional[Dict]:
         )
         if getlogin_result is None:
             return None
-
+            
         res_proto, dict_res = getlogin_result
         acc_id = str(majorlogin_response.account_id)
         level = int(get_proto_field(dict_res, 6, 1))
@@ -2078,7 +2240,6 @@ async def process_account_token(access_token: str) -> Optional[Dict]:
         return await _process_account_token(access_token)
 
 
-# ==================== WORKER ====================
 async def run_account_worker(account_data: Dict, label: str):
     acc_id = str(account_data['account_id'])
     informational_task = None
@@ -2210,6 +2371,68 @@ def load_accounts():
     return accounts
 
 
+# ==================== CUSTOM DASHBOARD HANDLER ====================
+async def run_custom_dashboard():
+    """
+    Ye function Railway ke PORT par direct Dashboard serve karta hai.
+    Isse koi proxy error nahi aayega aur app crash nahi hoga.
+    """
+    from aiohttp import web
+    
+    async def index_handler(request):
+        return web.Response(text=HTML_CONTENT, content_type='text/html')
+
+    async def api_stats_handler(request):
+        # Aapke dashboard_server.py se data fetch karke bhejta hai
+        try:
+            total_accounts = len(bot_state.accounts)
+            total_gained_exp = sum(acc.get("gained_exp", 0) for acc in bot_state.accounts.values())
+            total_matches = sum(acc.get("matches_played", 0) for acc in bot_state.accounts.values())
+            
+            accounts_data = []
+            for uid, acc in bot_state.accounts.items():
+                accounts_data.append({
+                    "uid": uid,
+                    "nickname": acc.get("nickname", f"Player_{uid}"),
+                    "status": acc.get("status", "ONLINE"),
+                    "initial_exp": acc.get("initial_exp", 0),
+                    "current_exp": acc.get("current_exp", 0),
+                    "gained_exp": acc.get("gained_exp", 0)
+                })
+                
+            logs = [{"time": l[0], "message": l[1], "level": l[2]} for l in reversed(bot_state.logs[-50:])]
+            
+            return web.json_response({
+                "total_accounts": total_accounts,
+                "total_gained_exp": total_gained_exp,
+                "total_matches": total_matches,
+                "accounts": accounts_data,
+                "logs": logs
+            })
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=500)
+
+    async def api_add_account(request):
+        try:
+            data = await request.json()
+            if "on_account_added" in bot_state.refresh_callbacks:
+                await bot_state.refresh_callbacks["on_account_added"](data)
+            return web.json_response({"status": "ok"})
+        except Exception as e:
+            return web.json_response({"status": "error", "error": str(e)}, status=500)
+
+    app = web.Application()
+    app.router.add_get('/', index_handler)
+    app.router.add_get('/api/stats', api_stats_handler)
+    app.router.add_post('/api/account/add', api_add_account)
+    
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, WEB_HOST, WEB_PORT)
+    await site.start()
+    log_ok(f"Custom Dashboard LIVE -> http://{WEB_HOST}:{WEB_PORT}")
+
+
 # ==================== MAIN ====================
 async def main():
     log_banner()
@@ -2224,9 +2447,9 @@ async def main():
     log_info(f"FORCED REGION        : {FORCE_REGION}")
     log_info(f"Modes Supported      : BR + Lone Wolf")
 
+    # 🆕 START THE CUSTOM DASHBOARD DIRECTLY (NO PROXY = NO CRASH)
     try:
-        await start_web_dashboard(host=WEB_HOST, port=WEB_PORT)
-        log_ok(f"Dashboard live -> http://localhost:{WEB_PORT}")
+        await run_custom_dashboard()
     except Exception as e:
         log_err(f"Dashboard failed: {e}")
 
