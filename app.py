@@ -374,7 +374,7 @@ def log_banner():
     print("")
     print(f"{Colors.CYAN}+{'=' * 58}+{Colors.ENDC}")
     print(f"{Colors.CYAN}|{Colors.ENDC}{' ' * 58}{Colors.CYAN}|{Colors.ENDC}")
-    print(f"{Colors.CYAN}|{Colors.ENDC}{Colors.BOLD}{Colors.MAGENTA}{'BG OFFICIAL - AUTO LEVEL UP'.center(58)}{Colors.ENDC}{Colors.CYAN}|{Colors.ENDC}")
+    print(f"{Colors.CYAN}|{Colors.ENDC}{Colors.BOLD}{Colors.MAGENTA}{'CHINNU TEAM - AUTO LEVEL UP'.center(58)}{Colors.ENDC}{Colors.CYAN}|{Colors.ENDC}")
     print(f"{Colors.CYAN}|{Colors.ENDC}{Colors.DIM}{'BR + Lone Wolf | IND Region | Human Mode'.center(58)}{Colors.ENDC}{Colors.CYAN}|{Colors.ENDC}")
     print(f"{Colors.CYAN}|{Colors.ENDC}{' ' * 58}{Colors.CYAN}|{Colors.ENDC}")
     print(f"{Colors.CYAN}|{Colors.ENDC}{Colors.WHITE}{f'Dashboard: http://localhost:{WEB_PORT}'.center(58)}{Colors.ENDC}{Colors.CYAN}|{Colors.ENDC}")
@@ -738,12 +738,16 @@ async def send_majorlogin(data, release_version, server_url):
             log_err(f"[MajorLogin] Response too small")
             return None
         res_proto = bashant_pb2.MajorLoginRes()
+        
+        # 🆕 SMART FALLBACK: Agar corrupt error aaye toh direct parse karega
         try:
             res_proto.ParseFromString(content)
             if res_proto.region and res_proto.token:
                 return res_proto
         except Exception:
             pass
+        
+        # Try offset 64
         if len(content) > 64:
             try:
                 res_proto = bashant_pb2.MajorLoginRes()
@@ -752,6 +756,8 @@ async def send_majorlogin(data, release_version, server_url):
                     return res_proto
             except Exception:
                 pass
+                
+        # Try all offsets
         for offset in range(min(128, len(content))):
             try:
                 candidate = bashant_pb2.MajorLoginRes()
@@ -760,6 +766,8 @@ async def send_majorlogin(data, release_version, server_url):
                     return candidate
             except Exception:
                 pass
+                
+        # Agar sab fail ho jaye toh error throw karega
         res_proto = bashant_pb2.MajorLoginRes()
         res_proto.ParseFromString(content)
         return res_proto
@@ -1501,7 +1509,6 @@ async def functional_lone_wolf(addrs, starter_packet, account_region, client_ver
                     nonlocal search_attempts, last_start_time
                     search_attempts += 1
 
-                    # 🆕 PAUSE CHECK
                     if bot_state.is_paused(uid_str):
                         try:
                             bot_state.update_status(uid_str, "PAUSED", 0)
@@ -1549,7 +1556,6 @@ async def functional_lone_wolf(addrs, starter_packet, account_region, client_ver
                         )
                     except Exception: pass
 
-                    # 🆕 PAUSE CHECK IN MAIN LOOP
                     if bot_state.is_paused(uid_str):
                         try:
                             bot_state.update_status(uid_str, "PAUSED", 0)
