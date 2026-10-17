@@ -15,6 +15,7 @@ import traceback
 import base64
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
+from aiohttp import web # <-- ADDED FOR HTML SERVING
 
 if sys.platform == "win32":
     try:
@@ -69,6 +70,28 @@ _VERSION_CONFIG_CACHE = None
 _VERSION_CONFIG_CACHE_AT = 0.0
 _VERSION_CONFIG_LOCK = asyncio.Lock()
 _REFRESH_SEMAPHORE = asyncio.Semaphore(3)
+
+
+# ==================== HTML WEB SERVER (NEW) ====================
+async def start_html_server():
+    """Serves the HTML file on Railway's $PORT"""
+    app = web.Application()
+    
+    async def index_handler(request):
+        # Serves templates/Index.html
+        return web.FileResponse('./templates/Index.html')
+
+    # Catch-all to serve the HTML page for any route
+    app.router.add_get('/', index_handler)
+    app.router.add_get('/{tail:.*}', index_handler)
+
+    # Railway assigns a dynamic port via $PORT
+    port = int(os.environ.get("PORT", 8080))
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    log_ok(f"HTML Page live on Railway PORT {port}")
 
 
 # ==================== HUMAN HELPERS ====================
@@ -2223,6 +2246,12 @@ async def main():
     log_info(f"HUMAN MODE           : {'ON' if HUMAN_MODE else 'OFF'}")
     log_info(f"FORCED REGION        : {FORCE_REGION}")
     log_info(f"Modes Supported      : BR + Lone Wolf")
+
+    # 🆕 START THE HTML SERVER FOR RAILWAY
+    try:
+        await start_html_server()
+    except Exception as e:
+        log_err(f"HTML Server failed: {e}")
 
     try:
         await start_web_dashboard(host=WEB_HOST, port=WEB_PORT)
