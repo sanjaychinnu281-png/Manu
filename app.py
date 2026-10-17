@@ -15,7 +15,7 @@ import traceback
 import base64
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
-from aiohttp import web # <-- ADDED FOR HTML SERVING
+from aiohttp import web # <-- HTML SERVER KE LIYE
 
 if sys.platform == "win32":
     try:
@@ -72,16 +72,20 @@ _VERSION_CONFIG_LOCK = asyncio.Lock()
 _REFRESH_SEMAPHORE = asyncio.Semaphore(3)
 
 
-# ==================== HTML WEB SERVER (NEW) ====================
+# ==================== HTML WEB SERVER (FIXED) ====================
 async def start_html_server():
-    """Serves the HTML file on Railway's $PORT"""
+    """Serves the HTML file on Railway's $PORT and handles filename case issues"""
     app = web.Application()
     
     async def index_handler(request):
-        # Serves templates/Index.html
-        return web.FileResponse('./templates/Index.html')
+        # Ye check karega ki file ka naam Index.html hai ya index.html
+        if os.path.exists('./templates/Index.html'):
+            return web.FileResponse('./templates/Index.html')
+        elif os.path.exists('./templates/index.html'):
+            return web.FileResponse('./templates/index.html')
+        else:
+            return web.Response(text="Error: HTML file not found in templates folder! Please check the filename.", status=404)
 
-    # Catch-all to serve the HTML page for any route
     app.router.add_get('/', index_handler)
     app.router.add_get('/{tail:.*}', index_handler)
 
@@ -1524,7 +1528,6 @@ async def functional_lone_wolf(addrs, starter_packet, account_region, client_ver
                     nonlocal search_attempts, last_start_time
                     search_attempts += 1
 
-                    # 🆕 PAUSE CHECK
                     if bot_state.is_paused(uid_str):
                         try:
                             bot_state.update_status(uid_str, "PAUSED", 0)
@@ -1572,7 +1575,6 @@ async def functional_lone_wolf(addrs, starter_packet, account_region, client_ver
                         )
                     except Exception: pass
 
-                    # 🆕 PAUSE CHECK IN MAIN LOOP
                     if bot_state.is_paused(uid_str):
                         try:
                             bot_state.update_status(uid_str, "PAUSED", 0)
