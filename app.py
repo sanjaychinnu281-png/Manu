@@ -15,7 +15,7 @@ import traceback
 import base64
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
-from aiohttp import web, ClientSession # <-- FIXED: HTML Dashboard Proxy ke liye
+from aiohttp import web, ClientSession 
 
 if sys.platform == "win32":
     try:
@@ -39,13 +39,12 @@ from dashboard_server import bot_state, start_web_dashboard
 
 # ==================== CONFIG ====================
 WEB_HOST = "0.0.0.0"
-WEB_PORT = 20333 # Ye aapka internal dashboard port hai
+WEB_PORT = 20333 
 ACCOUNTS_FILE = "accounts.json"
 TOKEN_CACHE_FILE = "token_cache.json"
 DEVICES_FILE = "devices.json"
 TOKEN_CACHE_TTL = 1200
 
-# Human-like
 START_MATCH_INTERVAL_MIN = 4.0
 START_MATCH_INTERVAL_MAX = 8.0
 START_MATCH_INTERVAL = 10.0
@@ -72,22 +71,13 @@ _VERSION_CONFIG_LOCK = asyncio.Lock()
 _REFRESH_SEMAPHORE = asyncio.Semaphore(3)
 
 
-# ==================== HTML DASHBOARD PROXY (FIXED) ====================
+# ==================== HTML DASHBOARD PROXY ====================
 async def start_html_server():
-    """
-    Railway ke main PORT ($PORT) par ek proxy server chalata hai.
-    Ye proxy har request ko aapke asli dashboard (port 20333) par bhejta hai.
-    """
     app = web.Application()
     
     async def proxy_handler(request):
-        # Target URL: Jo aapka dashboard_server.py serve kar raha hai
         target_url = f"http://127.0.0.1:{WEB_PORT}{request.path_qs}"
-        
-        # Request body read karo agar POST/PUT hai
         body = await request.read() if request.method in ['POST', 'PUT'] else None
-        
-        # Headers copy karo (Host hata kar)
         headers = {k: v for k, v in request.headers.items() if k.lower() not in ['host', 'content-length']}
         
         try:
@@ -100,21 +90,13 @@ async def start_html_server():
                     timeout=30
                 ) as resp:
                     resp_body = await resp.read()
-                    # Response headers copy karo (content-length hata kar, aiohttp khud set karega)
                     resp_headers = {k: v for k, v in resp.headers.items() if k.lower() not in ['content-length', 'transfer-encoding', 'content-encoding']}
-                    return web.Response(
-                        body=resp_body,
-                        status=resp.status,
-                        headers=resp_headers
-                    )
+                    return web.Response(body=resp_body, status=resp.status, headers=resp_headers)
         except Exception as e:
             log_err(f"Proxy Error: {e}")
             return web.Response(text=f"Proxy Error: Dashboard server is not responding. ({e})", status=502)
 
-    # Saare routes proxy par bhej do
     app.router.add_route('*', '/{tail:.*}', proxy_handler)
-
-    # Railway assigns a dynamic port via $PORT (Default 8080)
     port = int(os.environ.get("PORT", 8080))
     runner = web.AppRunner(app)
     await runner.setup()
@@ -435,7 +417,6 @@ def log_banner():
     print("")
 
 
-# Backwards compat
 print_colored = cprint
 print_success = log_ok
 print_error = log_err
@@ -1219,8 +1200,7 @@ async def keepalive_ping(sock, ip, port, key_bytes, mask, stop_event):
             await loop.sock_sendto(sock, pkt, (ip, port))
         except Exception:
             pass
-        i += 1
-        try:
+        i += 1        try:
             await asyncio.wait_for(stop_event.wait(), timeout=3.0)
         except asyncio.TimeoutError:
             pass
@@ -1955,6 +1935,7 @@ async def _process_account_uid_pass(uid: str, password: str) -> Optional[Dict]:
         if getlogin_result is None:
             log_err(f"GetLoginData failed")
             return None
+            
         res_proto, dict_res = getlogin_result
 
         acc_id = str(majorlogin_response.account_id)
@@ -2054,7 +2035,9 @@ async def _process_account_token(access_token: str) -> Optional[Dict]:
             majorlogin_response.token, release_version
         )
         if getlogin_result is None:
-            return None        res_proto, dict_res = getlogin_result
+            return None
+            
+        res_proto, dict_res = getlogin_result
         acc_id = str(majorlogin_response.account_id)
         level = int(get_proto_field(dict_res, 6, 1))
         exp = int(get_proto_field(dict_res, 7, 0))
