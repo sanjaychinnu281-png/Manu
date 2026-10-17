@@ -15,7 +15,7 @@ import traceback
 import base64
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple, Any
-from aiohttp import web # <-- HTML SERVER KE LIYE
+from aiohttp import web, ClientSession # <-- FIXED: HTML Dashboard Proxy ke liye
 
 if sys.platform == "win32":
     try:
@@ -39,7 +39,7 @@ from dashboard_server import bot_state, start_web_dashboard
 
 # ==================== CONFIG ====================
 WEB_HOST = "0.0.0.0"
-WEB_PORT = 20333
+WEB_PORT = 20333 # Ye aapka internal dashboard port hai
 ACCOUNTS_FILE = "accounts.json"
 TOKEN_CACHE_FILE = "token_cache.json"
 DEVICES_FILE = "devices.json"
@@ -72,30 +72,55 @@ _VERSION_CONFIG_LOCK = asyncio.Lock()
 _REFRESH_SEMAPHORE = asyncio.Semaphore(3)
 
 
-# ==================== HTML WEB SERVER (FIXED) ====================
+# ==================== HTML DASHBOARD PROXY (FIXED) ====================
 async def start_html_server():
-    """Serves the HTML file on Railway's $PORT and handles filename case issues"""
+    """
+    Railway ke main PORT ($PORT) par ek proxy server chalata hai.
+    Ye proxy har request ko aapke asli dashboard (port 20333) par bhejta hai.
+    """
     app = web.Application()
     
-    async def index_handler(request):
-        # Ye check karega ki file ka naam Index.html hai ya index.html
-        if os.path.exists('./templates/Index.html'):
-            return web.FileResponse('./templates/Index.html')
-        elif os.path.exists('./templates/index.html'):
-            return web.FileResponse('./templates/index.html')
-        else:
-            return web.Response(text="Error: HTML file not found in templates folder! Please check the filename.", status=404)
+    async def proxy_handler(request):
+        # Target URL: Jo aapka dashboard_server.py serve kar raha hai
+        target_url = f"http://127.0.0.1:{WEB_PORT}{request.path_qs}"
+        
+        # Request body read karo agar POST/PUT hai
+        body = await request.read() if request.method in ['POST', 'PUT'] else None
+        
+        # Headers copy karo (Host hata kar)
+        headers = {k: v for k, v in request.headers.items() if k.lower() not in ['host', 'content-length']}
+        
+        try:
+            async with ClientSession() as session:
+                async with session.request(
+                    method=request.method,
+                    url=target_url,
+                    headers=headers,
+                    data=body,
+                    timeout=30
+                ) as resp:
+                    resp_body = await resp.read()
+                    # Response headers copy karo (content-length hata kar, aiohttp khud set karega)
+                    resp_headers = {k: v for k, v in resp.headers.items() if k.lower() not in ['content-length', 'transfer-encoding', 'content-encoding']}
+                    return web.Response(
+                        body=resp_body,
+                        status=resp.status,
+                        headers=resp_headers
+                    )
+        except Exception as e:
+            log_err(f"Proxy Error: {e}")
+            return web.Response(text=f"Proxy Error: Dashboard server is not responding. ({e})", status=502)
 
-    app.router.add_get('/', index_handler)
-    app.router.add_get('/{tail:.*}', index_handler)
+    # Saare routes proxy par bhej do
+    app.router.add_route('*', '/{tail:.*}', proxy_handler)
 
-    # Railway assigns a dynamic port via $PORT
+    # Railway assigns a dynamic port via $PORT (Default 8080)
     port = int(os.environ.get("PORT", 8080))
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, '0.0.0.0', port)
     await site.start()
-    log_ok(f"HTML Page live on Railway PORT {port}")
+    log_ok(f"HTML Dashboard Proxy live on Railway PORT {port} -> targeting internal port {WEB_PORT}")
 
 
 # ==================== HUMAN HELPERS ====================
@@ -2029,9 +2054,7 @@ async def _process_account_token(access_token: str) -> Optional[Dict]:
             majorlogin_response.token, release_version
         )
         if getlogin_result is None:
-            return None
-
-        res_proto, dict_res = getlogin_result
+            return None        res_proto, dict_res = getlogin_result
         acc_id = str(majorlogin_response.account_id)
         level = int(get_proto_field(dict_res, 6, 1))
         exp = int(get_proto_field(dict_res, 7, 0))
@@ -2249,7 +2272,7 @@ async def main():
     log_info(f"FORCED REGION        : {FORCE_REGION}")
     log_info(f"Modes Supported      : BR + Lone Wolf")
 
-    # 🆕 START THE HTML SERVER FOR RAILWAY
+    # 🆕 START THE PROXY SERVER FOR RAILWAY
     try:
         await start_html_server()
     except Exception as e:
@@ -2257,7 +2280,7 @@ async def main():
 
     try:
         await start_web_dashboard(host=WEB_HOST, port=WEB_PORT)
-        log_ok(f"Dashboard live -> http://localhost:{WEB_PORT}")
+        log_ok(f"Dashboard live internally -> http://localhost:{WEB_PORT}")
     except Exception as e:
         log_err(f"Dashboard failed: {e}")
 
