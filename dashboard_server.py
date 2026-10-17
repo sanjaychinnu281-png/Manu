@@ -40,6 +40,7 @@ class BotState:
                 "matches_played": 0,
                 "active_matches": 0,
                 "last_match_time": None,
+                "mode": "BR" # Default Mode
             }
         else:
             acc = self.accounts[uid]
@@ -92,10 +93,13 @@ class BotState:
             self._paused.discard(uid)
 
     def get_account_mode(self, uid):
+        # Agar mode set hai toh wahi dega, warna default "BR"
         return self._modes.get(str(uid), "BR")
 
     def set_account_mode(self, uid, mode):
         self._modes[str(uid)] = mode
+        if str(uid) in self.accounts:
+            self.accounts[str(uid)]["mode"] = mode
 
 
 bot_state = BotState()
@@ -103,6 +107,10 @@ bot_state = BotState()
 
 def _accounts_summary():
     accounts = list(bot_state.accounts.values())
+    # Ensure mode shows correctly in UI
+    for acc in accounts:
+        acc["mode"] = bot_state.get_account_mode(acc["uid"])
+        
     total_gained = sum((a["current_exp"] - a["initial_exp"]) for a in accounts)
     total_matches = sum(a["matches_played"] for a in accounts)
     return {
