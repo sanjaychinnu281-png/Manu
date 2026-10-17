@@ -714,7 +714,8 @@ async def build_majorlogin_payload(open_id, access_token, platform, client_versi
         }
         raw_proto = build_proto(payload_dict)
         encrypted = encrypt_api_bytes(raw_proto)
-        return encrypted    except Exception as e:
+        return encrypted    
+   except Exception as e:
         log_err(f"MajorLogin payload: {e}")
         return None
 
